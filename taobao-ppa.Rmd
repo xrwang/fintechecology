@@ -1,0 +1,73 @@
+---
+title: "taobao-point-pattern"
+author: "xiaowei"
+date: "8/28/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(tidyverse)
+library(httr)
+library(ggmap)
+library(ggplot2)
+library(httr)
+library(jsonlite)
+library(leaflet)
+library(mapview)
+library(raster)
+
+library(spatstat)
+library(rgdal)
+library(maptools)
+library(sp)
+library(rgeos)
+library(sf)
+```
+
+## Map geolocated taobao villages
+```{r}
+taobao_villages_2016 <- read_csv('quantdata/taobao_villages_2016_geocoded_full.csv')
+bw_map <- get_googlemap(zoom = 6,
+  color = "bw",
+  style = "feature:road|visibility:off&style=element:labels|visibility:off&style=feature:administrative|visibility:off")
+
+leaflet(data = taobao_villages_2016) %>% 
+  addTiles() %>%
+  addMarkers(~lon, ~lat, popup = ~as.character(cun), label = ~as.character(cun))
+
+taobao_villages_2016
+```
+
+```{r}
+cn_adm <- readOGR("quantdata/spatial/cnadm11.shp", integer64 = "allow.loss")
+
+cn_adm <- as(cn_adm, "SpatialPolygons")
+
+cn_admW <- as.owin(cn_adm)
+
+unitname(cn_admW) <- c('kilometer', 'kilometers')
+```
+
+```{r}
+
+taobao_xy <- taobao_villages_2016[,c(7,8)]
+
+taobao_xy  <- na.omit(taobao_xy)
+
+
+taobao_ppp  <- as.ppp(taobao_xy, W=cn_admW)
+```
+```{r}
+plot(taobao_ppp)
+```
+
+```{r pressure, echo=TRUE, fig.keep='all'}
+P <- taobao_ppp
+Q <- quadratcount(P, nx= 6, ny=3)
+
+plot(P, pch=20, cols="grey70", main=NULL)
+plot(Q, add=TRUE)
+
+```
