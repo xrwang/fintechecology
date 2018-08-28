@@ -1,0 +1,238 @@
+---
+title: "rainfall, taobao and agricultural yield"
+output: github_document
+---
+
+```{r}
+library(dplyr)
+library(tidyverse)
+library(httr)
+library(ggmap)
+library(ggplot2)
+library(httr)
+library("jsonlite")
+
+```
+
+request from shandong weather
+http://www.sdswj.cn/Svr/HandlerRain.ashx?cmd=GetRainCountTableData&adcd=37&STTime=2018-07-29+09%3A54&EDTime=2018-07-30+09%3A54
+
+response is like this:
+```{markdown}
+data: [
+[
+"山东省",
+"68.85",
+"382.00",
+"无棣",
+"229",
+"37"
+],
+```
+
+where the second value is the precipitation in mm (average)
+
+
+```{r}
+urlin <- 'http://www.sdswj.cn/Svr/HandlerRain.ashx?cmd=GetRainCountTableData&adcd=37&STTime=2018-07-29+09%3A54&EDTime=2018-07-30+09%3A54'
+
+
+get_rainfall_month_year <- function (year, month, monthBefore) {
+  url <- paste0('http://www.sdswj.cn/Svr/HandlerRain.ashx?cmd=GetRainCountTableData&adcd=37&STTime=',year,'-', monthBefore,'-01+09%3A54&EDTime=',year,'-',month,'-01+09%3A54')
+  fromJSON(url)
+}
+rainfallSD_2003 <- get_rainfall_month_year(2003,06,05)$data
+rainfallSD_2004 <- get_rainfall_month_year(2004,06,05)$data
+rainfallSD_2005 <- get_rainfall_month_year(2005,06,05)$data
+rainfallSD_2006 <- get_rainfall_month_year(2006,06,05)$data
+rainfallSD_2007 <- get_rainfall_month_year(2007,06,05)$data
+rainfallSD_2008 <- get_rainfall_month_year(2008,06,05)$data
+rainfallSD_2009 <- get_rainfall_month_year(2009,06,05)$data
+rainfallSD_2010 <- get_rainfall_month_year(2010,06,05)$data
+rainfallSD_2011 <- get_rainfall_month_year(2011,06,05)$data
+rainfallSD_2012 <- get_rainfall_month_year(2012,06,05)$data
+rainfallSD_2013 <- get_rainfall_month_year(2013,06,05)$data
+rainfallSD_2014 <- get_rainfall_month_year(2014,06,05)$data
+rainfallSD_2015 <- get_rainfall_month_year(2015,06,05)$data
+rainfallSD_2016 <- get_rainfall_month_year(2016,06,05)$data
+rainfallSD_2017 <- get_rainfall_month_year(2017,06,05)$data
+rainfallSD_2018 <- get_rainfall_month_year(2018,06,05)$data
+
+
+
+
+```
+
+Caoxian <- 菏泽市[18,] "菏泽市"
+boxingxian <- 滨州市[17,] "滨州市"
+
+shenxian <- 聊城市 [16,] "聊城市"
+laiwu <- 莱芜市 [13,] "莱芜市
+
+
+```{r}
+rainfallSD_2003[13,]
+
+```
+
+
+```{r}
+ndviRainfallTable <- read_csv('ndvi.csv', na="NA")
+ndviRainfallTable
+
+
+ndviRainfallTableCaoxian <- filter(ndviRainfallTable,countyName=="caoxian")
+ndviRainfallTableBoxingxian <- filter(ndviRainfallTable,countyName=="boxingxian")
+ndviRainfallTableShenxian <- filter(ndviRainfallTable,countyName=="shenxian")
+ndviRainfallTableLaiwu <- filter(ndviRainfallTable,countyName=="laiwu")
+
+ndviRainfallTableCaoxianPre <- filter(ndviRainfallTableCaoxian,taobaoVillage==FALSE)
+ndviRainfallTableCaoxianPost <- filter(ndviRainfallTableCaoxian,taobaoVillage==TRUE)
+
+ndviRainfallTableBoxingxianPre <- filter(ndviRainfallTableBoxingxian,taobaoVillage==FALSE)
+ndviRainfallTableBoxingxianPost <- filter(ndviRainfallTableBoxingxian,taobaoVillage==TRUE)
+
+```
+```{r}
+a<- ggplot(ndviRainfallTable, aes(x=rainfall,y=ndvi, color=countyName)) +
+  geom_line()
+
+a
+```
+
+
+```{r}
+c<- ggplot(ndviRainfallTable, aes(x=year,y=ndvi, color=countyName)) +
+  geom_line()
+
+c
+```
+```{r}
+a<- ggplot(ndviRainfallTableCaoxian, aes(x=rainfall,y=ndvi)) +
+  geom_line()
+linearModcx <- lm(year ~ ndvi, data=ndviRainfallTableCaoxian)  
+linearModcxpre <- lm(year ~ ndvi, data=ndviRainfallTableCaoxianPre)
+linearModcxpost <- lm(year ~ ndvi, data=ndviRainfallTableCaoxianPost)
+print(linearModcx)
+print(linearModcxpre)
+print(linearModcxpost)
+
+linearModbx <- lm(year ~ ndvi, data=ndviRainfallTableBoxingxian)  
+linearModbxpre <- lm(year ~ ndvi, data=ndviRainfallTableBoxingxianPre) 
+linearModbxpost <- lm(year ~ ndvi, data=ndviRainfallTableBoxingxianPost) 
+
+print(linearModbxpre)
+print(linearModbxpost)
+print(linearModbx)
+
+
+
+
+
+
+
+```
+
+
+```{r}
+
+linearModRcx <- lm(rainfall ~ ndvi, data=ndviRainfallTableCaoxian)  
+linearModRcxpre <- lm(maxRecordedRain ~ ndvi, data=ndviRainfallTableCaoxianPre)
+linearModRcxpost <- lm(maxRecordedRain ~ ndvi, data=ndviRainfallTableCaoxianPost)
+print(linearModRcx)
+print(linearModRcxpre)
+print(linearModRcxpost)
+
+linearModRbx <- lm(rainfall ~ ndvi, data=ndviRainfallTableBoxingxian) 
+linearModRbxpre <- lm(rainfall ~ ndvi, data=ndviRainfallTableBoxingxianPre) 
+linearModRbxpost <- lm(rainfall ~ ndvi, data=ndviRainfallTableBoxingxianPost) 
+
+print(linearModRbxpre)
+print(linearModRbxpost)
+print(linearModRbx)
+
+```
+
+```{r}
+
+linearModsx <- lm(year ~ ndvi, data=ndviRainfallTableShenxian)  
+print(linearModsx)
+summary(linearModsx)
+
+linearModRsx <- lm(rainfall~ ndvi, data=ndviRainfallTableShenxian) 
+print(linearModRsx)
+summary(linearModRsx)
+
+linearModlw <- lm(year ~ ndvi, data=ndviRainfallTableLaiwu)  
+print(linearModlw)
+summary(linearModlw)
+
+linearModRlw <- lm(rainfall ~ ndvi, data=ndviRainfallTableLaiwu)  
+print(linearModRlw)
+summary(linearModRlw)
+
+```
+
+
+
+```{r}
+a<- ggplot(ndviRainfallTableShenxian, aes(x=rainfall,y=ndvi, color=countyName)) +
+  geom_point()
+a
+
+library("ggpubr")
+
+
+ggscatter(ndviRainfallTableShenxian, x = "year", y = "ndvi", add = "reg.line", xlab = "year", ylab = "ndvi", title="shenxian year v ndvi")
+ggscatter(ndviRainfallTableLaiwu, x = "year", y = "ndvi", add = "reg.line", xlab = "year", ylab = "ndvi", title="laiwu year v ndvi")
+
+ggscatter(ndviRainfallTableShenxian, x = "rainfall", y = "ndvi", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "rainfall", ylab = "ndvi",title="Shenxian rainfall v ndvi")
+ggscatter(ndviRainfallTableLaiwu, x = "rainfall", y = "ndvi", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "rainfall", ylab = "ndvi",title="Laiwu rainfall v ndvi")
+
+```
+
+
+
+```{r}
+ggscatter(ndviRainfallTableBoxingxian, x = "year", y = "ndvi", add = "reg.line", title="Boxingxian Year v NDVI",xlab = "year", ylab = "ndvi")
+
+ggscatter(ndviRainfallTableBoxingxian, x = "rainfall", y = "ndvi", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "rainfall", ylab = "ndvi",title="Boxingxian Rainfall v NDVI")
+
+ggscatter(ndviRainfallTableBoxingxianPre, x = "rainfall", y = "ndvi", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "rainfall", ylab = "ndvi",title="Boxingxian Pre Taobao rainfall v ndvi")
+ggscatter(ndviRainfallTableBoxingxianPost, x = "rainfall", y = "ndvi", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "rainfall", ylab = "ndvi",title="Boxingxian Post Taobao rainfall v ndvi")
+```
+
+
+```{r}
+
+ggscatter(ndviRainfallTableCaoxian, x = "year", y = "ndvi", add = "reg.line",          xlab = "year", ylab = "ndvi", title = "ndvi caoxian year v ndvi")
+
+ggscatter(ndviRainfallTableCaoxian, x = "maxRecordedRain", y = "ndvi", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "rainfall", ylab = "ndvi",title="Caoxian Taobao rainfall v ndvi")
+
+ggscatter(ndviRainfallTableCaoxianPre, x = "maxRecordedRain", y = "ndvi", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "rainfall", ylab = "ndvi",title="Caoxian Pre Taobao rainfall v ndvi")
+ggscatter(ndviRainfallTableCaoxianPost, x = "maxRecordedRain", y = "ndvi", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "rainfall", ylab = "ndvi",title="Caoxian Post Taobao rainfall v ndvi")
+```
