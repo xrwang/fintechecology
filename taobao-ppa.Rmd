@@ -10,24 +10,94 @@ knitr::opts_chunk$set(echo = TRUE)
 library(dplyr)
 library(tidyverse)
 library(httr)
-library(ggmap)
 library(ggplot2)
 library(httr)
 library(jsonlite)
 library(leaflet)
 library(mapview)
 library(raster)
-
+#devtools::install_github("dkahle/ggmap")
 library(spatstat)
 library(rgdal)
 library(maptools)
 library(sp)
 library(rgeos)
 library(sf)
+library(foreign)
+library(ggmap)
+
 ```
 
-## Map geolocated taobao villages
+## Geocoding taobao villages from 2014 to get a sense of change over 2  years
+
 ```{r}
+taobao_villages_2014 <- readxl::read_excel('quantdata/taobao-village-list/taobao-village-list-2014.xlsx',
+                            col_names = c(
+                              'sheng',
+                              'shi',
+                              'xian',
+                              'xiangzhen',
+                              'cun',
+                              'goods_made'
+                            ),
+                            skip=1)
+
+# 
+# 
+# taobao_villages_2014 <- taobao_villages_2014 %>% 
+#   mutate(., geocodeAdd = paste0(sheng,cun))
+# 
+# taobao_villages_2014
+# 
+# geoc <- function(x) {
+#   gc <-ggmap::geocode(as.character(x))
+#   Sys.sleep(3) # sleep 5 seconds
+#   return(gc)
+# }
+
+#taobao_villages_subset_2014 <- subset(taobao_villages_2014, shi == '泉州市' )
+
+
+# tb1 <- data.frame(geocodeAdd = taobao_villages_subset_2014$geocodeAdd) %>%
+#  map_df(., geoc)
+
+# gc1 <- ggmap::geocode(taobao_villages_subset_2014$geocodeAdd, output = "latlona") %>%
+#   bind_cols(taobao_villages_subset_2014)
+# 
+
+
+# gc2 <- ggmap::geocode(taobao_villages_2014$geocodeAdd, output = "latlona") %>%
+#   bind_cols(taobao_villages_2014)
+
+
+# taobao_villages_2014_geocoded_loc <- data.frame(geocodeAdd = taobao_villages_2014$geocodeAdd) %>%
+#  bind_cols(., purrr::map_df(., geoc))
+# 
+
+# 
+#taobao_villages_2014_geocoded <- mutate_geocode(taobao_villages_2014, geocodeAdd)
+#write_csv(gc2, "quantdata/taobao_villages_2014_geocoded_loc.csv")
+
+#taobao_villages_2014
+
+
+```
+
+
+```{r}
+#write_csv(gc2, "quantdata/taobao_villages_2014_geocoded_loc.csv")
+gc2
+
+taobao_villages_2014
+```
+
+
+## Map geolocated taobao villages
+
+```{r}
+
+
+
 taobao_villages_2016 <- read_csv('quantdata/taobao_villages_2016_geocoded_full.csv')
 bw_map <- get_googlemap(zoom = 6,
   color = "bw",
@@ -41,13 +111,20 @@ taobao_villages_2016
 ```
 
 ```{r}
-cn_adm <- readOGR("quantdata/spatial/cnadm11.shp", integer64 = "allow.loss")
 
-cn_adm <- as(cn_adm, "SpatialPolygons")
 
-cn_admW <- as.owin(cn_adm)
+cn_adm <- readOGR("quantdata/spatial/cn_adm1_simplified.shp")
+shandong <- readOGR("quantdata/spatial/shandong_outline.shp")
 
-unitname(cn_admW) <- c('kilometer', 'kilometers')
+shandongW <- as.owin(shandong)
+
+# cn_adm <- as(cn_adm, "SpatialPolygons")
+# 
+# cn_admW <- as.owin(cn_adm)
+# 
+# unitname(cn_admW) <- c('kilometer', 'kilometers')
+# 
+# plot(cn_adm)
 ```
 
 ```{r}
@@ -56,9 +133,23 @@ taobao_xy <- taobao_villages_2016[,c(7,8)]
 
 taobao_xy  <- na.omit(taobao_xy)
 
-
 taobao_ppp  <- as.ppp(taobao_xy, W=cn_admW)
 ```
+
+```{r}
+shandong_tb <- readOGR('quantdata/spatial/shandong_taobao.shp')
+shandong_tbxy <- shandong_tb[,c(7,8)]
+shandong_tb_ppp <- as(shandong_tbxy,"ppp")
+ds <- density(shandong_tb_ppp)
+class(ds)
+## [1] "im"
+plot(ds, main='shandong taobaovillages')
+lines(shandong)
+points(shandong_tb_ppp)
+
+
+```
+
 ```{r}
 plot(taobao_ppp)
 ```
